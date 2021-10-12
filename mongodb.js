@@ -1,20 +1,20 @@
-const mongodb = require('mongodb')
+// const mongodb = require('mongodb')
 
-const mongoClient = mongodb.MongoClient
+// const mongoClient = mongodb.MongoClient
 
-const connectionUrl = 'mongodb://127.0.0.1:27017'
+// const connectionUrl = 'mongodb://127.0.0.1:27017'
 
-const dbName = "taskManger"
+// const dbName = "taskManger"
 
-const _id = new mongodb.ObjectId
+// const _id = new mongodb.ObjectId
 
-mongoClient.connect(connectionUrl,{useNewUrlParser:true},(err,client)=>{
-    if(err){
-        return console.log(err)
-    }
-    console.log('Success')
+// mongoClient.connect(connectionUrl,{useNewUrlParser:true},(err,client)=>{
+//     if(err){
+//         return console.log(err)
+//     }
+//     console.log('Success')
     
-    const db = client.db(dbName)
+//     const db = client.db(dbName)
     
     // db.collection('users').find({age:34}).count((err,data)=>{
     //     if(err){
@@ -32,10 +32,10 @@ mongoClient.connect(connectionUrl,{useNewUrlParser:true},(err,client)=>{
     //     $set:{completed:true}
     // }).then((res)=>console.log(res.matchedCount))
     // .catch((err)=>console.log(err))
-    db.collection('users').deleteMany({})
-    .then((res)=>console.log(res.deletedCount))
-    .catch((err)=>console.log(err))
-})
+    // db.collection('users').deleteMany({})
+    // .then((res)=>console.log(res.deletedCount))
+    // .catch((err)=>console.log(err))
+// })
 
 
 
