@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const JWT = require('jsonwebtoken')
 
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema({
     name:{
         type:String,
         required:true,
@@ -33,7 +34,15 @@ const userSchema = mongoose.Schema({
         trim:true,
         lowercase:true,
         minLength:6
+    },
+    tokens:[
+        {
+            token:{
+                type:String,
+                required:true
+        }
     }
+    ]
 })
 
 userSchema.pre('save', async function(next){
@@ -43,6 +52,34 @@ userSchema.pre('save', async function(next){
         }
     next()
 })
+
+// login function
+userSchema.statics.findByCredentials = async (email,password)=>{
+    const user = await User.findOne({email:email})
+    if(!user){
+        throw new Error ('Can not login, Wrong Email or Password')
+    }
+    const isMatch = await bcrypt.compare(password,user.password)
+    console.log(isMatch)
+    if(!isMatch){
+       throw new Error ('Can not login, Wrong Email or Password')
+    }
+    return user
+}
+
+// JWT function
+userSchema.methods.generateToken = async function(){
+    const user = this
+    const token = JWT.sign({_id:user._id.toString},'node course')
+    user.tokens = user.tokens.concat({token})
+
+    await user.save()
+
+    return token
+}
+
+
+
 const User = mongoose.model('User',userSchema)
 
 module.exports = User
