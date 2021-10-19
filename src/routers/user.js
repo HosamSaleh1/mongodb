@@ -2,9 +2,35 @@ const { ObjectId } = require('bson')
 const express = require('express')
 const router = new express.Router()
 const User = require('../models/user')
+const auth = require('../middelware/auth')
+// image upload
+const multer = require('multer')
+
+const upload = multer({
+    limits:{
+        fieldSize: 100000
+    },
+    fileFilter(req,file,cb){
+        if(!file.originalname.match(/\.(jpg|jpeg|png|jfif)$/)){
+            cb(new Error('Please upload an image file'))
+        }
+        cb(null,true)
+    }
+})
+
+router.post('/profile/avatar',auth,upload.single('avatar'),async (req,res)=>{
+    try{
+        req.user.avatar = req.file.buffer
+        await req.user.save()
+        res.send('Image Uploaded')
+    }
+    catch(e){
+        res.send('Error has Occured '+ e)
+    }
+})
 
 // get all
-router.get('/allUsers',(req,res)=>{
+router.get('/allUsers',auth,(req,res)=>{
     User.find({})
     .then((user)=>{
         res.status(200).send(user)
@@ -15,7 +41,7 @@ router.get('/allUsers',(req,res)=>{
 })
 
 // get by ID
-router.get('/allUsers/:id',(req,res)=>{
+router.get('/allUsers/:id',auth,(req,res)=>{
     const _id = req.params.id
     User.findById(_id)
     .then((user)=>{
@@ -60,7 +86,7 @@ router.get('/allUsers/:id',(req,res)=>{
 // })
 
 // update version 2 (to hash the password)
-router.patch('/updateUser/:id',async(req,res)=>{
+router.patch('/updateUser/:id',auth,async(req,res)=>{
     const updates = Object.keys(req.body)
     const allowedUpdates = ['name','age','password']
     const isValid = updates.every((update)=> allowedUpdates.includes(update))
@@ -80,7 +106,7 @@ router.patch('/updateUser/:id',async(req,res)=>{
 
 
 // Delete by ID
-router.delete('/deleteUser/:id',async(req,res)=>{
+router.delete('/deleteUser/:id',auth,async(req,res)=>{
     const _id = req.params.id
     try{
         const user = await User.findByIdAndDelete(_id)
@@ -118,6 +144,36 @@ router.post('/users/login', async(req,res)=>{
         res.status(500).send('error '+e)
     }
 })
+
+// logout
+router.delete('/logout',auth,async(req,res)=>{
+    try{
+        req.user.tokens = req.user.tokens.filter((el)=>{
+            return el.token !== req.token
+        })
+        await req.user.save()
+        res.status(200).send('Logout Successfuly')
+    }
+    catch(e){
+        res.status(400).send("Error :", e)
+    }
+})
+
+// logout All
+router.delete('/logoutAll',auth,async(req,res)=>{
+    try{
+        req.user.tokens = []
+        await req.user.save()
+        res.status(200).send('Logout From All Devices')
+    }
+    catch(e){
+        res.status(400).send('Error :', e)
+    }
+})
+
+
+
+
 
 
 

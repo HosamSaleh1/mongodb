@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true,
         lowercase:true,
-        uniqe:true,
+        unique:true,
         validate(value){
             if(!validator.isEmail(value))
             throw new Error ("Email is invalid")
@@ -32,7 +32,6 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true,
         trim:true,
-        lowercase:true,
         minLength:6
     },
     tokens:[
@@ -42,7 +41,10 @@ const userSchema = new mongoose.Schema({
                 required:true
         }
     }
-    ]
+    ],
+    avatar:{
+        type:Buffer
+    }
 })
 
 userSchema.pre('save', async function(next){
@@ -60,7 +62,6 @@ userSchema.statics.findByCredentials = async (email,password)=>{
         throw new Error ('Can not login, Wrong Email or Password')
     }
     const isMatch = await bcrypt.compare(password,user.password)
-    console.log(isMatch)
     if(!isMatch){
        throw new Error ('Can not login, Wrong Email or Password')
     }
@@ -70,7 +71,7 @@ userSchema.statics.findByCredentials = async (email,password)=>{
 // JWT function
 userSchema.methods.generateToken = async function(){
     const user = this
-    const token = JWT.sign({_id:user._id.toString},'node course')
+    const token = JWT.sign({_id:user._id.toString()},'node course', {expiresIn:'7 days'})
     user.tokens = user.tokens.concat({token})
 
     await user.save()
@@ -78,7 +79,12 @@ userSchema.methods.generateToken = async function(){
     return token
 }
 
-
+// Relations
+userSchema.virtual('tasks',{
+    ref:'Task',
+    localField:'_id',
+    foreignField:'owner'
+})
 
 const User = mongoose.model('User',userSchema)
 

@@ -2,22 +2,27 @@ const {ObjectId} = require('bson')
 const express = require('express')
 const router = new express.Router()
 const Task = require('../models/task')
+const auth = require('../middelware/auth')
+
 
 // get all
-router.get('/allTasks',(req,res)=>{
-    Task.find({})
-    .then((task)=>{
-        res.status(200).send(task)
-    })
-    .catch((e)=> {
-        res.status(500).send(e)
-    })
+router.get('/allTasks',auth,async (req,res)=>{
+    try{
+        await req.user.populate('tasks')
+        if(!req.user.tasks){
+            return "There is no tasks found"
+        }
+        res.status(200).send(req.user.tasks)
+    }
+    catch(e){
+        res.status(500).send("Error :",e)
+    }
 })
 
 // get by id
-router.get('/allTasks/:id',(req,res)=>{
+router.get('/allTasks/:id',auth,(req,res)=>{
     const _id = req.params.id
-    Task.findById(_id)
+    Task.findOne({_id,owner:req.user._id})
     .then((task)=>{
     if(!task){
         return res.status(400).send('No task is found')
@@ -30,8 +35,11 @@ router.get('/allTasks/:id',(req,res)=>{
 })
 
 // post task
-router.post('/addTask',(req,res)=>{
-    const task = new Task(req.body)
+router.post('/addTask',auth,(req,res)=>{
+    const task = new Task({
+        ...req.body,
+        owner:req.user._id
+    })
     task.save()
     .then(()=>{
         res.status(200).send(task)
@@ -42,7 +50,7 @@ router.post('/addTask',(req,res)=>{
 })
 
 // update task
-router.patch('/updateTask/:id', async (req,res)=>{
+router.patch('/updateTask/:id',auth, async (req,res)=>{
     const updates = Object.keys(req.body)
     const allowedUpdates = ['completed']
     const isValid = updates.every((update)=> allowedUpdates.includes(update))
@@ -51,18 +59,20 @@ router.patch('/updateTask/:id', async (req,res)=>{
     }
     const _id = req.params.id
     try{
-        const task = await Task.findByIdAndUpdate(_id,req.body,{new:true})
+        const task = await Task.findOne({_id,owner:req.user._id})
         if(!task){
             return res.status(404).send('Task Not Found')
         }
+        updates.forEach((update)=>task[update]=req.body[update],{new:true})
+        await task.save()
         res.status(200).send(task)
     }catch(e){
-        res.status(400).send(e)
+        res.status(400).send('Error :',e)
     }
 })
 
 // delete task
-router.delete('/deleteTask/:id', async(req,res)=>{
+router.delete('/deleteTask/:id',auth, async(req,res)=>{
     const _id = req.params.id
     try{
         const task = await Task.findByIdAndDelete(_id)
@@ -71,7 +81,7 @@ router.delete('/deleteTask/:id', async(req,res)=>{
         }
         res.status(200).send(task)
     }catch(e){
-        res.status(400).send(e)
+        res.status(400).send('Error :',e)
     }
 })
 
