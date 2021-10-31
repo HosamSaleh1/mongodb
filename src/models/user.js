@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
+require('dotenv').config()
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -42,9 +43,13 @@ const userSchema = new mongoose.Schema({
         }
     }
     ],
-    avatar:{
+ 
+        
+        avatar:{
         type:Buffer
-    }
+        }
+    
+
 })
 
 userSchema.pre('save', async function(next){
@@ -71,7 +76,7 @@ userSchema.statics.findByCredentials = async (email,password)=>{
 // JWT function
 userSchema.methods.generateToken = async function(){
     const user = this
-    const token = JWT.sign({_id:user._id.toString()},'node course', {expiresIn:'7 days'})
+    const token = JWT.sign({_id:user._id.toString()},process.env.JWT_SECRET, {expiresIn:'7 days'})
     user.tokens = user.tokens.concat({token})
 
     await user.save()
@@ -85,6 +90,18 @@ userSchema.virtual('tasks',{
     localField:'_id',
     foreignField:'owner'
 })
+
+// to object function
+userSchema.methods.toJSON = function(){
+    const user = this
+
+    const userObject = user.toObject()
+
+    delete userObject.password
+    delete userObject.tokens
+
+    return userObject
+}
 
 const User = mongoose.model('User',userSchema)
 

@@ -1,13 +1,15 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
-const port = 3000
+const port = process.env.PORT
 const userRouter = require('./routers/user')
 const taskRouter = require('./routers/task')
+const cors = require('cors')
 
 require('./db/mongoose')
 
 app.use(express.json())
-
+app.use(cors())
 
 app.use(userRouter)
 app.use(taskRouter)

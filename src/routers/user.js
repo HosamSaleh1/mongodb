@@ -11,7 +11,7 @@ const upload = multer({
         fieldSize: 100000
     },
     fileFilter(req,file,cb){
-        if(!file.originalname.match(/\.(jpg|jpeg|png|jfif)$/)){
+        if(!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)){
             cb(new Error('Please upload an image file'))
         }
         cb(null,true)
@@ -25,13 +25,24 @@ router.post('/profile/avatar',auth,upload.single('avatar'),async (req,res)=>{
         res.send('Image Uploaded')
     }
     catch(e){
-        res.send('Error has Occured '+ e)
+        res.send(e)
     }
 })
 
 // get all
 router.get('/allUsers',auth,(req,res)=>{
     User.find({})
+    .then((user)=>{
+        res.status(200).send(user)
+    })
+    .catch((err)=>{
+        res.status(500).send(err)
+    })
+})
+
+// get profile
+router.get('/profile',auth,(req,res)=>{
+    User.findById(req.user._id)
     .then((user)=>{
         res.status(200).send(user)
     })
@@ -51,7 +62,6 @@ router.get('/allUsers/:id',auth,(req,res)=>{
         res.status(200).send(user)
     .catch((e)=>{
             res.status(500).send(e)
-            console.log(e.status , e)
         })
     })
 })
@@ -100,7 +110,7 @@ router.patch('/updateUser/:id',auth,async(req,res)=>{
         await user.save()
         res.status(200).send(user)
     }catch(e){
-        res.status(400).send("Error has Occured " + e)
+        res.status(400).send(e)
     }
 })
 
@@ -126,22 +136,22 @@ router.post('/addUser', async (req,res)=>{
     try{
         const user = new User(req.body)
         await user.save()
-        await user.generateToken()
-        res.status(200).send({user})
+        const token = await user.generateToken()
+        res.status(200).send({user,token})
     }
     catch(err){
-        res.status(400).send('Error has occurred ' + err)
+        res.status(400).send(err)
     }
 })
 
 // login
-router.post('/users/login', async(req,res)=>{
+router.post('/login', async(req,res)=>{
     try{
         const user = await User.findByCredentials(req.body.email,req.body.password)
         const token = await user.generateToken()
         res.status(200).send({user,token})
     }catch(e){
-        res.status(500).send('error '+e)
+        res.status(500).send(e)
     }
 })
 
@@ -155,7 +165,7 @@ router.delete('/logout',auth,async(req,res)=>{
         res.status(200).send('Logout Successfuly')
     }
     catch(e){
-        res.status(400).send("Error :", e)
+        res.status(400).send(e)
     }
 })
 
@@ -167,7 +177,7 @@ router.delete('/logoutAll',auth,async(req,res)=>{
         res.status(200).send('Logout From All Devices')
     }
     catch(e){
-        res.status(400).send('Error :', e)
+        res.status(400).send(e)
     }
 })
 
